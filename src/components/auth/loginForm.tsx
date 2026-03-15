@@ -1,92 +1,74 @@
 "use client";
 
-import { useActionState } from "react";
-import { loginAction } from "@/lib/auth/auth.actions";
-import { Button }          from "@/components/ui/button";
-import { Input }           from "@/components/ui/input";
-import { Label }           from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, TriangleAlert }  from "lucide-react";
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
-const initialState = undefined;
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function LoginForm() {
-  const [state, formAction, isPending] = useActionState(loginAction, initialState);
+export default function LoginPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    const res = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    if (res?.error) {
+      toast.error("Invalid Credentials");
+      setIsLoading(false);
+    } else {
+      toast.success("Welcome back!");
+      router.push("/dashboard");
+      router.refresh();
+    }
+  }
 
   return (
-    <form action={formAction} className="space-y-5">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+      <Card className="w-full max-w-sm shadow-lg">
+        <CardHeader className="space-y-1 pb-4"> {/* Reduced bottom padding */}
+          <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
+          <CardDescription className="text-center">
+            Enter your email to access your dashboard
+          </CardDescription>
+        </CardHeader>
+        
+        <form onSubmit={handleSubmit}>
+          <CardContent className="grid gap-4"> {/* Standardized gap for all elements */}
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" placeholder="name@example.com" required />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" name="password" type="password" required />
+            </div>
 
-      {/* Global error */}
-      {state?.error && (
-        <Alert variant="destructive" className="border-red-500/50 bg-red-500/10">
-          <TriangleAlert className="h-4 w-4" />
-          <AlertDescription className="text-red-400">
-            {state.error}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Email field */}
-      <div className="space-y-2">
-        <Label htmlFor="email" className="text-slate-300 text-sm font-medium">
-          Email Address
-        </Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          placeholder="responder@agency.gov"
-          required
-          disabled={isPending}
-          autoComplete="email"
-          className={`bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 
-                      focus:border-orange-500 focus:ring-orange-500/20 h-11
-                      ${state?.fields?.email ? "border-red-500" : ""}`}
-        />
-        {/* Field-level error */}
-        {state?.fields?.email && (
-          <p className="text-xs text-red-400">{state.fields.email}</p>
-        )}
-      </div>
-
-      {/* Password field */}
-      <div className="space-y-2">
-        <Label htmlFor="password" className="text-slate-300 text-sm font-medium">
-          Password
-        </Label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          placeholder="••••••••"
-          required
-          disabled={isPending}
-          autoComplete="current-password"
-          className={`bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 
-                      focus:border-orange-500 focus:ring-orange-500/20 h-11
-                      ${state?.fields?.password ? "border-red-500" : ""}`}
-        />
-        {/* Field-level error */}
-        {state?.fields?.password && (
-          <p className="text-xs text-red-400">{state.fields.password}</p>
-        )}
-      </div>
-
-      <Button
-        type="submit"
-        disabled={isPending}
-        className="w-full h-11 bg-orange-600 hover:bg-orange-500 text-white font-semibold 
-                   transition-all duration-200 shadow-lg shadow-orange-900/30"
-      >
-        {isPending ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Signing in...
-          </>
-        ) : (
-          "Sign In to System"
-        )}
-      </Button>
-    </form>
+            {/* Moving the button here removes the CardFooter gap */}
+            <Button className="w-full mt-2" type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading ? "Signing in..." : "Log In"}
+            </Button>
+          </CardContent>
+        </form>
+      </Card>
+    </div>
   );
 }

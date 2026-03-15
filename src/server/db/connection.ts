@@ -1,108 +1,57 @@
-import knex, { Knex } from 'knex';
-// @ts-ignore
-import knexConfig from '../../../knexfile';
+import knex, { type Knex } from "knex";
 
-const environment = process.env.NODE_ENV || 'development';
+// ── Config ────────────────────────────────────────────────
+const config: Knex.Config = {
+  client: "mysql2",
 
-// Singleton pattern to prevent multiple connections
+  connection: {
+    host: process.env.DB_HOST ?? "localhost",
+    port: Number(process.env.DB_PORT ?? 3306),
+    user: process.env.DB_USER ?? "root",
+    password: process.env.DB_PASSWORD ?? "",
+    database: process.env.DB_NAME ?? "myapp",
+    // keep connection alive
+    connectTimeout: 10_000,
+  },
+
+  pool: {
+    min: 2,
+    max: 10,
+    acquireTimeoutMillis: 30_000, // wait 30s before throwing
+    idleTimeoutMillis: 600_000, // release idle connections after 10min
+    reapIntervalMillis: 1_000, // check for idle every 1s
+  },
+
+  // auto add created_at / updated_at
+  migrations: {
+    tableName: "knex_migrations",
+    directory: "./db/migrations",
+    extension: "ts",
+  },
+
+  // log queries in development only
+  debug: process.env.NODE_ENV === "development",
+};
+
+// ── Singleton (prevents too many connections on hot reload) ──
 declare global {
+  // eslint-disable-next-line no-var
   var __db: Knex | undefined;
 }
 
-// Create or reuse existing connection
-function createConnection(): Knex {
-  const config = knexConfig[environment as keyof typeof knexConfig];
+export const db: Knex = globalThis.__db ?? knex(config);
 
-  if (process.env.NODE_ENV === 'development') {
-    // In development, reuse connection to prevent hot reload issues
-    if (!global.__db) {
-      global.__db = knex(config);
-    }
-    return global.__db;
-  }
-
-  // In production, create new connection
-  return knex(config);
+if (process.env.NODE_ENV !== "production") {
+  globalThis.__db = db;
 }
 
-export const db = createConnection();
-
-// Add connection pool monitoring
-if (process.env.NODE_ENV === 'development') {
-  db.on('query', (_query) => {
-    // console.log('Query:', query.sql.substring(0, 100) + '...');
-  });
-
-  db.on('query-error', (error) => {
-    console.error('Query Error:', error);
-  });
-}
-
-// Test database connection
-export async function testConnection() {
+// ── Health check helper ───────────────────────────────────
+export async function checkDbConnection(): Promise<void> {
   try {
-    await db.raw('SELECT 1');
-    console.log('Database connection successful');
-    return true;
-  } catch (error) {
-    console.error('Database connection failed:', error);
-    return false;
+    await db.raw("SELECT 1");
+    console.log("✅ MySQL connected");
+  } catch (err) {
+    console.error("❌ MySQL connection failed:", err);
+    throw err;
   }
-}
-
-// Get connection pool status
-export function getPoolStatus() {
-  const pool = (db as any).client?.pool;
-  if (pool) {
-    return {
-      min:            pool.min,
-      max:            pool.max,
-      used:           pool.numUsed(),
-      free:           pool.numFree(),
-      pending:        pool.numPendingAcquires(),
-      pendingCreates: pool.numPendingCreates(),
-    };
-  }
-  return null;
-}
-
-// Monitor connection pool
-export function logPoolStatus() {
-  const status = getPoolStatus();
-  if (status) {
-    console.log('Connection Pool Status:', status);
-
-    // Warn if pool is getting full
-    if (status.used / status.max > 0.8) {
-      console.warn('⚠️  Connection pool is getting full!', status);
-    }
-  }
-}
-
-// Graceful shutdown
-export async function closeConnection() {
-  try {
-    await db.destroy();
-    if (process.env.NODE_ENV === 'development') {
-      global.__db = undefined;
-    }
-    console.log('Database connection closed');
-  } catch (error) {
-    console.error('Error closing database connection:', error);
-  }
-}
-
-// Cleanup on process termination
-if (process.env.NODE_ENV !== 'test') {
-  process.on('SIGINT', async () => {
-    console.log('Received SIGINT, closing database connection...');
-    await closeConnection();
-    process.exit(0);
-  });
-
-  process.on('SIGTERM', async () => {
-    console.log('Received SIGTERM, closing database connection...');
-    await closeConnection();
-    process.exit(0);
-  });
 }

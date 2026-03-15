@@ -4,10 +4,12 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  password?: string;
   role: UserRole;
-  is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
+  
+  is_active?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 // Extend NextAuth session types
@@ -26,8 +28,18 @@ declare module "next-auth" {
 }
 
 declare module "next-auth" {
-    interface User {
-      id: string; 
-      role: UserRole;
-    }
+  interface User {
+    id: string;
+    role: UserRole;
   }
+}
+
+export type Users = {
+  id: string;
+  name: string | null;
+  email: string;
+  password: string;
+  created_at: Date;
+  updated_at: Date;
+  role: string;
+};

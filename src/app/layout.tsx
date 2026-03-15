@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Providers } from "@/components/Providers";
+import { Toaster } from "sonner";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -27,7 +29,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <Providers>{children}</Providers>
+
+        {/* Keep the Toaster here so it's on top of everything */}
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );

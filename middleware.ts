@@ -1,31 +1,20 @@
-import { auth } from "@/lib/auth/auth.config";
-import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 
 export default auth((req) => {
-  const { nextUrl, auth: session } = req;
-  const isLoggedIn = !!session;
+  const isLoggedIn = !!req.auth;
+  const { nextUrl } = req;
 
-  const isAuthRoute  = nextUrl.pathname === "/login";           // ← exact match, not startsWith
-  const isApiRoute   = nextUrl.pathname.startsWith("/api/");
-  const isPublicFile = nextUrl.pathname.startsWith("/_next") ||
-                       nextUrl.pathname.startsWith("/favicon");
-
-  // ✅ always allow these through — no redirect
-  if (isAuthRoute || isApiRoute || isPublicFile) {
-    return NextResponse.next();
+  // 1. If trying to access dashboard while logged out -> Redirect to Login
+  if (nextUrl.pathname.startsWith("/dashboard") && !isLoggedIn) {
+    return Response.redirect(new URL("/login", nextUrl));
   }
 
-  // ✅ not logged in + protected route → go to login
-  if (!isLoggedIn) {
-    return NextResponse.redirect(new URL("/login", nextUrl.origin));
+  // 2. If trying to access login while ALREADY logged in -> Redirect to Dashboard
+  if (nextUrl.pathname === "/login" && isLoggedIn) {
+    return Response.redirect(new URL("/dashboard", nextUrl));
   }
-
-  // ✅ logged in + protected route → allow
-  return NextResponse.next();
 });
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|public).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
