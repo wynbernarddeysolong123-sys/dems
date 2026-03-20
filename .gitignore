@@ -1,6 +1,32 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+
 # dependencies
+# Python virtual environment (src/ocr)
+src/ocr/venv/
+src/ocr/.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# EasyOCR / Machine Learning Models & large binary files
+# Model weights, checkpoints, ONNX exports
+src/ocr/models/
+src/ocr/**/*.pt
+src/ocr/**/*.pth
+src/ocr/**/*.onnx
+src/ocr/**/*.pkl
+src/ocr/**/*.bin
+src/ocr/**/*.h5
+src/ocr/**/*.weights
+
+# Uploaded / processed images inside OCR
+src/ocr/uploads/
+src/ocr/output/
+
+.python-version
+
+
 /node_modules
 /.pnp
 .pnp.*
