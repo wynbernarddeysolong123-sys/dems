@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Home, Users, Settings, LogOut, Menu } from "lucide-react";
+import { Home, Users, Settings, Building, Menu } from "lucide-react";
 import Link from "next/link";
 
 interface SidebarProps {
@@ -18,6 +18,11 @@ export function Sidebar({ isOpen, setIsOpen, user }: SidebarProps) {
       title: "Users",
       href: "/dashboard/user",
       icon: <Users className="h-4 w-4" />,
+    },
+    {
+      title: "Barangay",
+      href: "/dashboard/barangay",
+      icon: <Building className="h-4 w-4" />,
     },
     {
       title: "Settings",

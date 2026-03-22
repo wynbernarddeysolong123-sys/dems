@@ -1,9 +1,28 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, User, MapPin, Navigation } from "lucide-react";
+import { Loader2, User, MapPin, Navigation, Upload, Camera, ArrowLeft, CheckCircle, ShieldCheck, CreditCard, Home } from "lucide-react";
+
+import regionData from "@/address/region.json";
+import provinceData from "@/address/province.json";
+import cityData from "@/address/cities.json";
+import barangayRaw from "@/address/barangay.json";
+import { getBarangaysAction } from "@/lib/actions/barangay.action";
+import { getPuroksByBarangayAction } from "@/lib/actions/purok.action";
+import { Barangay } from "@/types/barangay-management";
+import { Purok } from "@/types/purok-management";
+
+interface BarangayEntry {
+  brgy_code: string;
+  brgy_name: string;
+  city_code: string;
+  province_code: string;
+  region_code: string;
+}
+
+const barangayData = barangayRaw as BarangayEntry[];
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,9 +41,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function PreRegForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isScanModalOpen, setIsScanModalOpen] = useState(true);
   const router = useRouter();
   // State for form fields
   const [formData, setFormData] = useState({
@@ -36,6 +63,73 @@ export default function PreRegForm() {
 
   // State for the loading/scanning animation
   const [isScanning, setIsScanning] = useState(false);
+
+  // Address cascade state
+  const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedBarangay, setSelectedBarangay] = useState("");
+  const [selectedPurok, setSelectedPurok] = useState("");
+  const [pickupPoint, setPickupPoint] = useState("");
+  const [dbBarangays, setDbBarangays] = useState<Barangay[]>([]);
+  const [puroks, setPuroks] = useState<Purok[]>([]);
+  const [isFetchingPuroks, setIsFetchingPuroks] = useState(false);
+
+  // Filtered lists derived from selections
+  const filteredProvinces = useMemo(
+    () => provinceData.filter((p) => p.region_code === selectedRegion),
+    [selectedRegion]
+  );
+
+  const filteredCities = useMemo(
+    () => cityData.filter((c) => c.province_code === selectedProvince),
+    [selectedProvince]
+  );
+
+  const filteredBarangays = useMemo(
+    () => barangayData.filter((b) => b.city_code === selectedCity),
+    [selectedCity]
+  );
+
+  // Fetch all barangays from database on mount
+  useEffect(() => {
+    const fetchDbBarangays = async () => {
+      const result = await getBarangaysAction();
+      if (result.success) {
+        setDbBarangays(result.data || []);
+      }
+    };
+    fetchDbBarangays();
+  }, []);
+
+  // Fetch puroks when selected barangay changes
+  useEffect(() => {
+    const fetchPuroks = async () => {
+      if (!selectedBarangay) {
+        setPuroks([]);
+        return;
+      }
+
+      // Find the matching barangay in the database by name
+      const currentBrgyName = barangayData.find(b => b.brgy_code === selectedBarangay)?.brgy_name;
+      const dbBrgy = dbBarangays.find(b => b.barangay_name.toLowerCase() === currentBrgyName?.toLowerCase());
+
+      if (dbBrgy) {
+        setIsFetchingPuroks(true);
+        const result = await getPuroksByBarangayAction(dbBrgy.barangay_id);
+        if (result.success) {
+          setPuroks(result.data || []);
+        } else {
+          setPuroks([]);
+        }
+        setIsFetchingPuroks(false);
+      } else {
+        setPuroks([]);
+      }
+    };
+
+    fetchPuroks();
+  }, [selectedBarangay, dbBarangays]);
 
   // This function runs IMMEDIATELY when a file is picked
   const handleAutoScan = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -66,6 +160,9 @@ export default function PreRegForm() {
         lastName: data.last_name || "",
         suffix: data.suffix || "",
       });
+
+      // 4. Close the modal after successful scan
+      setIsScanModalOpen(false);
 
     } catch (error) {
       console.error("Scan failed:", error);
@@ -105,10 +202,96 @@ export default function PreRegForm() {
   }
 
   return (
-    <Card className="w-full max-w-2xl shadow-lg">
-      <CardHeader className="space-y-1 pb-4 text-center">
-        <CardTitle className="text-2xl font-bold">Pre-Registration</CardTitle>
-        <CardDescription>
+    <div className="w-full flex justify-center py-10">
+      {/* INITIAL SCAN MODAL */}
+      <Dialog open={isScanModalOpen} onOpenChange={setIsScanModalOpen}>
+        <DialogContent className="sm:max-w-xl p-0 border-none bg-transparent shadow-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Verify Identity</DialogTitle>
+            <DialogDescription>Upload your ID for automatic profile setup</DialogDescription>
+          </DialogHeader>
+          <Card className="w-full shadow-2xl border-t-4 border-t-primary rounded-none overflow-hidden">
+            <CardHeader className="space-y-1 pb-6 text-center bg-gray-50/50">
+              <div className="flex justify-center mb-2">
+                <div className="flex items-center gap-2 px-3 py-1 bg-white border rounded-full text-[10px] font-bold uppercase tracking-widest text-primary shadow-sm">
+                  <ShieldCheck className="h-3 w-3" />
+                  Secure Registration
+                </div>
+              </div>
+              <CardTitle className="text-3xl font-black italic tracking-tight text-gray-900">
+                Verify Identity
+              </CardTitle>
+              <CardDescription className="text-gray-500 font-medium">
+                Upload your ID for automatic profile setup
+              </CardDescription>
+              
+              <div className="flex items-center justify-center gap-4 mt-6">
+                <div className="h-2 w-16 rounded-full bg-primary" />
+                <div className="h-2 w-16 rounded-full bg-gray-200" />
+              </div>
+            </CardHeader>
+            <CardContent className="p-8">
+              <div className="space-y-8 py-4">
+                <div className="relative group">
+                  <Input
+                    id="id_upload_modal"
+                    name="id_card_image_modal"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAutoScan}
+                    disabled={isScanning}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="id_upload_modal"
+                    className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-none transition-all duration-300 cursor-pointer 
+                      ${isScanning 
+                        ? "bg-gray-50 border-gray-300 cursor-not-allowed" 
+                        : "bg-white border-primary/30 hover:border-primary hover:bg-primary/5 shadow-sm hover:shadow-md"}`}
+                  >
+                    {isScanning ? (
+                      <div className="flex flex-col items-center gap-4 px-6 text-center">
+                        <div className="relative">
+                          <Loader2 className="h-16 w-16 animate-spin text-primary opacity-20" />
+                          <Camera className="h-8 w-8 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent animate-pulse rounded-full" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xl font-bold italic text-primary">Scanning ID...</p>
+                          <p className="text-sm text-gray-400">Our AI is extracting your details</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-4 px-6 text-center">
+                        <div className="p-4 bg-primary/10 rounded-full group-hover:bg-primary/20 transition-colors">
+                          <Upload className="h-10 w-10 text-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xl font-bold text-gray-900 italic">Click to Upload ID</p>
+                          <p className="text-sm text-gray-500">National ID, Driver's License, or Passport</p>
+                        </div>
+                      </div>
+                    )}
+                  </label>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <p className="text-center text-[10px] text-gray-400 italic font-medium">
+                    * Advanced AI processing ensures your data is handled securely
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </DialogContent>
+      </Dialog>
+
+    <Card className="w-full max-w-2xl shadow-xl border-t-4 border-t-primary rounded-none overflow-hidden">
+      <CardHeader className="space-y-1 pb-6 text-center bg-gray-50/50">
+        <CardTitle className="text-3xl font-black italic tracking-tight text-gray-900">
+          Pre-Registration
+        </CardTitle>
+        <CardDescription className="text-gray-500 font-medium">
           Fill in your details to create an account
         </CardDescription>
       </CardHeader>
@@ -125,33 +308,47 @@ export default function PreRegForm() {
               <div className="grid gap-2">
                 <Label htmlFor="f_name">First Name</Label>
                 <Input
+                  name="f_name"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  required
+                  readOnly
+                  className="bg-gray-100 cursor-not-allowed font-medium text-gray-700"
                 />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="m_name">Middle Name</Label>
                 <Input
+                  name="m_name"
                   value={formData.middleName}
                   onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
+                  readOnly
+                  className="bg-gray-100 cursor-not-allowed font-medium text-gray-700"
                 />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="l_name">Last Name</Label>
                 <Input
+                  name="l_name"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  required
+                  readOnly
+                  className="bg-gray-100 cursor-not-allowed font-medium text-gray-700"
                 />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="name_ext">Extension</Label>
                 <Input
+                  name="name_ext"
                   value={formData.suffix}
-                  placeholder="Jr / III"
+                  placeholder="Extension"
                   onChange={(e) => setFormData({ ...formData, suffix: e.target.value })}
+                  readOnly
+                  className="bg-gray-100 cursor-not-allowed font-medium text-gray-700"
                 />
               </div>
             </div>
@@ -438,29 +635,7 @@ export default function PreRegForm() {
                 />
               </div>
 
-              {/* ID Upload Section */}
-              <div className="grid gap-2">
-                <Label htmlFor="id_upload" className="flex items-center gap-2">
-                  {isScanning ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                      <span className="text-primary font-bold">Scanning ID Contents...</span>
-                    </>
-                  ) : (
-                    "Upload ID for Auto-Fill"
-                  )}
-                </Label>
 
-                <Input
-                  id="id_upload"
-                  name="id_card_image"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAutoScan}
-                  disabled={isScanning}
-                  className={`cursor-pointer file:cursor-pointer file:text-sm file:font-medium ${isScanning ? "opacity-50" : ""}`}
-                />
-              </div>
             </div>
           </div>
           {/* Section: Additional Details & Profile Pic */}
@@ -521,15 +696,28 @@ export default function PreRegForm() {
               {/* Region */}
               <div className="grid gap-2">
                 <Label htmlFor="region">Region</Label>
-                <Select name="region" required onValueChange={(value) => console.log(value)}>
+                <Select
+                  name="region"
+                  required
+                  value={selectedRegion}
+                  onValueChange={(value) => {
+                    setSelectedRegion(value);
+                    setSelectedProvince("");
+                    setSelectedCity("");
+                    setSelectedBarangay("");
+                    setSelectedPurok("");
+                    setPickupPoint("");
+                  }}
+                >
                   <SelectTrigger id="region">
                     <SelectValue placeholder="Select Region" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ncr">NCR - National Capital Region</SelectItem>
-                    <SelectItem value="r6">Region VI - Western Visayas</SelectItem>
-                    <SelectItem value="r7">Region VII - Central Visayas</SelectItem>
-                    {/* Add more regions or map from an API/JSON */}
+                    {regionData.map((r) => (
+                      <SelectItem key={r.region_code} value={r.region_code}>
+                        {r.region_name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -537,14 +725,28 @@ export default function PreRegForm() {
               {/* Province */}
               <div className="grid gap-2">
                 <Label htmlFor="province">Province</Label>
-                <Select name="province" required disabled={false}>
+                <Select
+                  name="province"
+                  required
+                  value={selectedProvince}
+                  disabled={!selectedRegion}
+                  onValueChange={(value) => {
+                    setSelectedProvince(value);
+                    setSelectedCity("");
+                    setSelectedBarangay("");
+                    setSelectedPurok("");
+                    setPickupPoint("");
+                  }}
+                >
                   <SelectTrigger id="province">
-                    <SelectValue placeholder="Select Province" />
+                    <SelectValue placeholder={selectedRegion ? "Select Province" : "Select a region first"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="iloilo">Iloilo</SelectItem>
-                    <SelectItem value="negros_occ">Negros Occidental</SelectItem>
-                    <SelectItem value="cebu">Cebu</SelectItem>
+                    {filteredProvinces.map((p) => (
+                      <SelectItem key={p.province_code} value={p.province_code}>
+                        {p.province_name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -552,14 +754,27 @@ export default function PreRegForm() {
               {/* City / Municipality */}
               <div className="grid gap-2">
                 <Label htmlFor="city">City / Municipality</Label>
-                <Select name="city" required disabled={false}>
+                <Select
+                  name="city"
+                  required
+                  value={selectedCity}
+                  disabled={!selectedProvince}
+                  onValueChange={(value) => {
+                    setSelectedCity(value);
+                    setSelectedBarangay("");
+                    setSelectedPurok("");
+                    setPickupPoint("");
+                  }}
+                >
                   <SelectTrigger id="city">
-                    <SelectValue placeholder="Select City" />
+                    <SelectValue placeholder={selectedProvince ? "Select City" : "Select a province first"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="bacolod">Bacolod City</SelectItem>
-                    <SelectItem value="iloilo_city">Iloilo City</SelectItem>
-                    <SelectItem value="bago">Bago City</SelectItem>
+                    {filteredCities.map((c) => (
+                      <SelectItem key={c.city_code} value={c.city_code}>
+                        {c.city_name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -587,15 +802,26 @@ export default function PreRegForm() {
               {/* Barangay */}
               <div className="grid gap-2">
                 <Label htmlFor="barangay">Barangay</Label>
-                <Select name="barangay" required>
+                <Select
+                  name="barangay_id"
+                  required
+                  value={selectedBarangay}
+                  disabled={!selectedCity}
+                  onValueChange={(value) => {
+                    setSelectedBarangay(value);
+                    setSelectedPurok("");
+                    setPickupPoint("");
+                  }}
+                >
                   <SelectTrigger id="barangay">
-                    <SelectValue placeholder="Select Barangay" />
+                    <SelectValue placeholder={selectedCity ? "Select Barangay" : "Select a city first"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {/* Example Barangays for Bago City or others */}
-                    <SelectItem value="brgy_1">Poblacion</SelectItem>
-                    <SelectItem value="brgy_2">Sampinit</SelectItem>
-                    <SelectItem value="brgy_3">Balingasag</SelectItem>
+                    {filteredBarangays.map((b) => (
+                      <SelectItem key={b.brgy_code} value={b.brgy_code}>
+                        {b.brgy_name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -658,18 +884,36 @@ export default function PreRegForm() {
               {/* Purok */}
               <div className="grid gap-2">
                 <Label htmlFor="purok">Purok</Label>
-                <Select name="purok" required>
+                <Select 
+                  name="purok" 
+                  required 
+                  disabled={!selectedBarangay || isFetchingPuroks}
+                  value={selectedPurok}
+                  onValueChange={(value) => {
+                    setSelectedPurok(value);
+                    const purok = puroks.find(p => p.purok_name === value);
+                    if (purok) {
+                      setPickupPoint(purok.pickup_point_name || "");
+                    }
+                  }}
+                >
                   <SelectTrigger id="purok">
-                    <SelectValue placeholder="Select Purok" />
+                    <SelectValue placeholder={
+                      isFetchingPuroks 
+                        ? "Loading..." 
+                        : !selectedBarangay 
+                          ? "Select barangay first" 
+                          : puroks.length === 0 
+                            ? "No puroks found" 
+                            : "Select Purok"
+                    } />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="purok_1">Purok 1</SelectItem>
-                    <SelectItem value="purok_2">Purok 2</SelectItem>
-                    <SelectItem value="purok_3">Purok 3</SelectItem>
-                    <SelectItem value="purok_4">Purok 4</SelectItem>
-                    <SelectItem value="purok_5">Purok 5</SelectItem>
-                    <SelectItem value="purok_6">Purok 6</SelectItem>
-                    <SelectItem value="purok_7">Purok 7</SelectItem>
+                    {puroks.map((p) => (
+                      <SelectItem key={p.purok_id} value={p.purok_name}>
+                        {p.purok_name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -689,7 +933,10 @@ export default function PreRegForm() {
                 <Input
                   id="pickup_point"
                   name="pickup_point"
-                  placeholder="e.g. Near Brgy. Hall / Waiting Shed"
+                  value={pickupPoint}
+                  readOnly
+                  placeholder="Select a purok first"
+                  className="bg-gray-50 cursor-not-allowed"
                 />
               </div>
 
@@ -759,6 +1006,88 @@ export default function PreRegForm() {
 
             </div>
           </div>
+
+          <div className="flex items-center gap-2 border-b pb-1 mt-6">
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Account & Property Information (Optional)</span>
+          </div>
+
+          {/* Section: Bank & Account Info */}
+          <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="bank_Ewallet">Bank / E-Wallet</Label>
+                <Input
+                  id="bank_Ewallet"
+                  name="bank_Ewallet"
+                  placeholder="e.g. GCash, Maya, BDO"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="account_name">Account Name</Label>
+                <Input
+                  id="account_name"
+                  name="account_name"
+                  placeholder="Full Name on Account"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="account_number">Account Number</Label>
+                <Input
+                  id="account_number"
+                  name="account_number"
+                  placeholder="e.g. 09123456789"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+              <div className="grid gap-2">
+                <Label htmlFor="account_type">Account Type</Label>
+                <Select name="account_type">
+                  <SelectTrigger id="account_type">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Savings">Savings</SelectItem>
+                    <SelectItem value="Current">Current</SelectItem>
+                    <SelectItem value="Wallet">Digital Wallet</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="house_ownership">House Ownership</Label>
+                <Select name="house_ownership">
+                  <SelectTrigger id="house_ownership">
+                    <SelectValue placeholder="Select ownership" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Owned">Owned</SelectItem>
+                    <SelectItem value="Rented">Rented</SelectItem>
+                    <SelectItem value="Living with Relatives">Living with Relatives</SelectItem>
+                    <SelectItem value="Informal Settler">Informal Settler</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="shelter_damage_classification">Shelter Damage Classification</Label>
+                <Select name="shelter_damage_classification">
+                  <SelectTrigger id="shelter_damage_classification">
+                    <SelectValue placeholder="Select classification" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="None">No Damage</SelectItem>
+                    <SelectItem value="Partially Damaged">Partially Damaged</SelectItem>
+                    <SelectItem value="Totally Damaged">Totally Damaged</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
           <Button className="w-full mt-4" type="submit" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isLoading ? "Registering..." : "Complete Registration"}
@@ -766,5 +1095,6 @@ export default function PreRegForm() {
         </CardContent>
       </form>
     </Card>
+    </div>
   );
 }

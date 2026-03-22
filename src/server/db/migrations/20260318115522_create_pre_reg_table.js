@@ -35,11 +35,10 @@ exports.up = function (knex) {
     table.boolean("4ps_beneficiary").defaultTo(false);
 
     // Identifiers & Foreign Keys
-    table.integer("solo_address_id").unsigned().nullable();
-    table.integer("family_id").unsigned().nullable();
+    table.integer("address_id").unsigned().nullable();
     table.string("relation_to_family").nullable();
     table.integer("age_class_id").unsigned().nullable();
-    table.string("qr_id").nullable().unique();
+    table.integer("qr_id").unsigned().nullable();
     table.integer("account_information_id").unsigned().nullable();
 
     // Health & Vulnerability

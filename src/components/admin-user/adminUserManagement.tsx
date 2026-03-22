@@ -1,14 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useMemo, useState, useEffect } from "react";
+import { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/table/data-table";
+import { DataTableColumnHeader } from "@/components/table/column-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,8 +51,6 @@ export function UserManagement({ initialUsers }: { initialUsers: User[] }) {
     fetchUsers();
   }, []); // Runs once on mount
 
-  if (isLoading) return <div>Loading users...</div>;
-
   // Filter users based on search input
   const filteredUsers = users.filter((user) => {
     const firstName = user.f_name?.toLowerCase() || "";
@@ -73,6 +66,97 @@ export function UserManagement({ initialUsers }: { initialUsers: User[] }) {
       username.includes(search)
     );
   });
+
+  // ── Columns ──────────────────────────────────────────────────────────
+
+  const columns: ColumnDef<User>[] = useMemo(
+    () => [
+      {
+        accessorKey: "user",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="User" />
+        ),
+        cell: ({ row }) => {
+          const user = row.original;
+          return (
+            <div className="flex items-center gap-3">
+              <Avatar className="h-9 w-9 border border-gray-200">
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {user.f_name?.[0]?.toUpperCase() || "?"}
+                  {user.l_name?.[0]?.toUpperCase() || ""}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col text-left">
+                <span className="font-medium text-gray-900 leading-none">
+                  {user.f_name} {user.l_name}
+                </span>
+                <span className="text-xs text-muted-foreground mt-1">
+                  {user.email}
+                </span>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "role",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Role" />
+        ),
+        cell: ({ row }) => {
+          const role = row.getValue("role") as string;
+          return (
+            <Badge
+              variant="outline"
+              className={role === "admin" ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground"}
+            >
+              {role}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Actions" className="text-right" />
+        ),
+        cell: ({ row }) => {
+          const user = row.original;
+          return (
+            <div className="text-right">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuLabel>Manage</DropdownMenuLabel>
+                  <DropdownMenuItem>
+                    <Mail className="mr-2 h-4 w-4" /> Email
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <ShieldAlert className="mr-2 h-4 w-4" /> Change Role
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-red-600 focus:bg-red-50"
+                    onClick={() => handleDelete(user.admin_id)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  if (isLoading) return <div>Loading users...</div>;
+
   const handleDelete = async (id: number) => {
     // No more window.confirm() needed here!
     const result = await deleteUserAction(id);
@@ -110,93 +194,8 @@ export function UserManagement({ initialUsers }: { initialUsers: User[] }) {
       </div>
 
       {/* Bordered Table Container */}
-      <div className="rounded-md border border-gray-200 bg-white overflow-hidden shadow-sm">
-        <Table>
-          <TableHeader className="bg-gray-50/50">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="font-semibold text-gray-900 border-r border-gray-100 last:border-r-0">
-                User
-              </TableHead>
-              <TableHead className="font-semibold text-gray-900 border-r border-gray-100 last:border-r-0">
-                Role
-              </TableHead>
-              <TableHead className="text-right font-semibold text-gray-900">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
-                <TableRow
-                  key={user.admin_id || `user-${user.email}`}
-                  className="hover:bg-gray-50/80 transition-colors"
-                >
-                  <TableCell className="border-r border-gray-100 last:border-r-0">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9 border border-gray-200">
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {user.f_name?.[0]?.toUpperCase() || "?"}
-                          {user.l_name?.[0]?.toUpperCase() || ""}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col text-left">
-                        <span className="font-medium text-gray-900 leading-none">
-                          {user.f_name} {user.l_name}
-                        </span>
-                        <span className="text-xs text-muted-foreground mt-1">
-                          {user.email}
-                        </span>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="border-r border-gray-100 last:border-r-0">
-                    <Badge
-                      variant={user.role === "admin" ? "default" : "outline"}
-                      className="font-medium"
-                    >
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
-                        <DropdownMenuLabel>Manage</DropdownMenuLabel>
-                        <DropdownMenuItem>
-                          <Mail className="mr-2 h-4 w-4" /> Email
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <ShieldAlert className="mr-2 h-4 w-4" /> Change Role
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-red-600 focus:bg-red-50"
-                          onClick={() => handleDelete(user.admin_id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={3}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  No users found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <div className="rounded-none border border-gray-200 bg-white overflow-hidden shadow-sm">
+        <DataTable columns={columns} data={filteredUsers} />
       </div>
     </div>
   );
