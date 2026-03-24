@@ -8,7 +8,7 @@ import { userService } from "@/lib/services/admin-user.services";
 export default async function UsersPage() {
   const session = await auth();
     // 1. Security Check (Casting to string to avoid the TS comparison error)
-    if (!session || (session.user?.role as string) !== "admin") {
+    if (!session || (session.user?.role as string) !== "admin" &&(session.user?.role as string) !== "superadmin" ) {
       redirect("/dashboard");
     }
 
