@@ -28,8 +28,10 @@ function LocationMarker({ lat, lng, onChange }: MapPickerProps) {
     },
   });
 
-  return lat !== null && lng !== null ? (
-    <Marker position={[lat, lng]} />
+  const isValidPos = lat != null && lng != null && !isNaN(Number(lat)) && !isNaN(Number(lng));
+
+  return isValidPos ? (
+    <Marker position={[Number(lat), Number(lng)]} />
   ) : null;
 }
 
@@ -37,11 +39,14 @@ function LocationMarker({ lat, lng, onChange }: MapPickerProps) {
 function ChangeView({ center, zoom }: { center: [number, number]; zoom?: number }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, zoom || map.getZoom());
-    // Force a resize check in case the dialog is still animating
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 100);
+    const [lat, lng] = center;
+    if (lat != null && lng != null && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
+      map.setView(center, zoom || map.getZoom());
+      // Force a resize check in case the dialog is still animating
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+    }
   }, [center, zoom, map]);
   return null;
 }

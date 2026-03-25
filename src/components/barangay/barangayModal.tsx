@@ -51,7 +51,7 @@ export function BarangayModal({
 }: BarangayModalProps) {
     const [isLoading, setIsLoading] = useState(false);
 
-    const [formData, setFormData] = useState<Omit<Barangay, "barangay_id" | "created_at" | "updated_at">>({
+    const [formData, setFormData] = useState<Omit<Barangay, "id" | "created_at" | "updated_at">>({
         barangay_name: "",
         barangay_captain_name: "",
         signature_brgy_captain: "",
@@ -101,7 +101,7 @@ export function BarangayModal({
         try {
             if (barangay) {
                 // UPDATE
-                const result = await updateBarangayAction(barangay.barangay_id, formData as Partial<Barangay>);
+                const result = await updateBarangayAction(barangay.id, formData as Partial<Barangay>);
                 if (result.success) {
                     onSuccess({ ...barangay, ...formData } as Barangay);
                     toast.success("Barangay updated successfully");

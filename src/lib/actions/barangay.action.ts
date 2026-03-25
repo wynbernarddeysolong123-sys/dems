@@ -26,18 +26,18 @@ async function saveSignature(base64Data: string): Promise<string | null> {
     if (!base64Content) return null;
 
     const buffer = Buffer.from(base64Content, "base64");
-    
+
     // Determine extension
     const mimeMatch = base64Data.match(/data:image\/([a-zA-Z+]+);/);
     const ext = mimeMatch ? mimeMatch[1] : "png";
-    
+
     const filename = `sig_${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
     const uploadDir = path.join(process.cwd(), "public", "uploads", "signatures");
     const filePath = path.join(uploadDir, filename);
 
     // Ensure dir exists (redundant but safe)
     await fs.mkdir(uploadDir, { recursive: true });
-    
+
     await fs.writeFile(filePath, buffer);
     return `/uploads/signatures/${filename}`;
   } catch (error) {
@@ -59,10 +59,10 @@ export async function deleteBarangayAction(id: number) {
 export async function updateBarangayAction(id: number, data: Partial<Barangay>) {
   try {
     if (data.signature_brgy_captain) {
-        const savedPath = await saveSignature(data.signature_brgy_captain);
-        if (savedPath) {
-            data.signature_brgy_captain = savedPath;
-        }
+      const savedPath = await saveSignature(data.signature_brgy_captain);
+      if (savedPath) {
+        data.signature_brgy_captain = savedPath;
+      }
     }
     await barangayService.updateBarangay(id, data);
     revalidatePath("/dashboard/barangay");
@@ -72,13 +72,13 @@ export async function updateBarangayAction(id: number, data: Partial<Barangay>) 
   }
 }
 
-export async function addBarangayAction(data: Omit<Barangay, "barangay_id">) {
+export async function addBarangayAction(data: Omit<Barangay, "id">) {
   try {
     if (data.signature_brgy_captain) {
-        const savedPath = await saveSignature(data.signature_brgy_captain);
-        if (savedPath) {
-            data.signature_brgy_captain = savedPath;
-        }
+      const savedPath = await saveSignature(data.signature_brgy_captain);
+      if (savedPath) {
+        data.signature_brgy_captain = savedPath;
+      }
     }
     const newBarangay = await barangayService.createBarangay(data);
     revalidatePath("/dashboard/barangay");

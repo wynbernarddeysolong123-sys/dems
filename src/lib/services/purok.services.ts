@@ -10,7 +10,7 @@ export const purokService = {
     return purokRepository.getById(id);
   },
 
-  async createPurok(data: Omit<Purok, "purok_id">): Promise<Purok> {
+  async createPurok(data: Omit<Purok, "id">): Promise<Purok> {
     return purokRepository.create(data);
   },
 

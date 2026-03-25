@@ -104,14 +104,14 @@ export function BarangayManagement({
   };
 
   const handleViewDetails = (barangay: Barangay) => {
-    router.push(`/dashboard/barangay/${barangay.barangay_id}`);
+    router.push(`/dashboard/barangay/${barangay.id}`);
   };
 
   const handleSuccess = (updatedBarangay: Barangay) => {
     if (selectedBarangay) {
       // If we were editing, update the item in the list
       setBarangays((prev) =>
-        prev.map((b) => b.barangay_id === updatedBarangay.barangay_id ? updatedBarangay : b)
+        prev.map((b) => b.id === updatedBarangay.id ? updatedBarangay : b)
       );
     } else {
       // If we were adding, add the new item to the top
@@ -219,7 +219,7 @@ export function BarangayManagement({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="cursor-pointer gap-2 text-red-500 hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
-                    onClick={() => handleDelete(brgy.barangay_id)}
+                    onClick={() => handleDelete(brgy.id)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     Delete
@@ -251,7 +251,7 @@ export function BarangayManagement({
     try {
       const res = await deleteBarangayAction(id);
       if (!res.success) throw new Error(res.error);
-      setBarangays((prev) => prev.filter((b) => b.barangay_id !== id));
+      setBarangays((prev) => prev.filter((b) => b.id !== id));
       toast.success("Barangay deleted successfully.");
     } catch (err: any) {
       toast.error(err.message || "Failed to delete barangay.");

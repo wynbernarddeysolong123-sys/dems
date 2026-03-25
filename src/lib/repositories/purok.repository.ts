@@ -4,7 +4,7 @@ import { Purok } from "@/types/purok-management";
 export const purokRepository = {
   async getAll(): Promise<Purok[]> {
     return db("purok_table").select(
-      "purok_id",
+      "id",
       "purok_name",
       "barangay_id",
       "purok_leader",
@@ -19,22 +19,22 @@ export const purokRepository = {
   },
 
   async getById(id: number): Promise<Purok | undefined> {
-    return db("purok_table").where("purok_id", id).first();
+    return db("purok_table").where("id", id).first();
   },
 
-  async create(data: Omit<Purok, "purok_id" | "created_at" | "updated_at">): Promise<Purok> {
+  async create(data: Omit<Purok, "id" | "created_at" | "updated_at">): Promise<Purok> {
     const [id] = await db("purok_table").insert(data);
-    return { ...data, purok_id: id } as Purok;
+    return { ...data, id: id } as Purok;
   },
 
   async update(id: number, data: Partial<Purok>): Promise<void> {
-    await db("purok_table").where("purok_id", id).update({
+    await db("purok_table").where("id", id).update({
       ...data,
       updated_at: db.fn.now(),
     });
   },
 
   async delete(id: number): Promise<void> {
-    await db("purok_table").where("purok_id", id).delete();
+    await db("purok_table").where("id", id).delete();
   },
 };

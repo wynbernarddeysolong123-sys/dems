@@ -13,7 +13,7 @@ export async function getPuroksByBarangayAction(barangayId: number) {
   }
 }
 
-export async function addPurokAction(data: Omit<Purok, "purok_id">) {
+export async function addPurokAction(data: Omit<Purok, "id">) {
   try {
     const newPurok = await purokService.createPurok(data);
     revalidatePath("/dashboard/purok");

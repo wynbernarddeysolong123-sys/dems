@@ -19,7 +19,6 @@ exports.seed = async function (knex: any) {
     {
       f_name: "Super",
       l_name: "Admin",
-      username: "superadmin",
       email: "superadmin@gmail.com",
       password: superAdminPassword,
       role: "superadmin",
@@ -31,24 +30,22 @@ exports.seed = async function (knex: any) {
     {
       f_name: "John",
       l_name: "Doe",
-      username: "admin1",
-      email:"admin@gmail.com",
+      email: "admin@gmail.com",
       password: adminPassword,
       role: "admin",
-      evac_loc_id: 1,
+      evac_loc_id: null,
       is_active: true,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now(),
-      
+
     },
     {
       f_name: "Jane",
       l_name: "Smith",
-      username: "staff1",
       email: "staff@gmail.com",
       password: staffPassword,
       role: "staff",
-      evac_loc_id: 2,
+      evac_loc_id: null,
       is_active: true,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now(),

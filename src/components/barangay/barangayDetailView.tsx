@@ -28,7 +28,7 @@ export function BarangayDetailView({ barangay }: BarangayDetailViewProps) {
 
   useEffect(() => {
     if (barangay) {
-      fetchPuroks(barangay.barangay_id);
+      fetchPuroks(barangay.id);
     }
   }, [barangay]);
 
@@ -131,7 +131,7 @@ export function BarangayDetailView({ barangay }: BarangayDetailViewProps) {
                   setEditingPurok(p);
                   setIsPurokModalOpen(true);
                 }}
-                onRefresh={() => fetchPuroks(barangay.barangay_id)}
+                onRefresh={() => fetchPuroks(barangay.id)}
               />
             </div>
           </div>
@@ -143,8 +143,8 @@ export function BarangayDetailView({ barangay }: BarangayDetailViewProps) {
           isOpen={isPurokModalOpen}
           onClose={() => setIsPurokModalOpen(false)}
           purok={editingPurok}
-          barangayId={barangay.barangay_id}
-          onSuccess={() => fetchPuroks(barangay.barangay_id)}
+          barangayId={barangay.id}
+          onSuccess={() => fetchPuroks(barangay.id)}
         />
       )}
     </div>

@@ -72,7 +72,7 @@ export function PurokTable({ data, onEdit, onRefresh }: PurokTableProps) {
                     const handleDelete = async () => {
                         if (confirm(`Are you sure you want to delete "${purok.purok_name}"?`)) {
                             try {
-                                const result = await deletePurokAction(purok.purok_id);
+                                const result = await deletePurokAction(purok.id);
                                 if (result.success) {
                                     toast.success("Purok deleted successfully");
                                     onRefresh();

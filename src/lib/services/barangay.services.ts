@@ -10,7 +10,7 @@ export const barangayService = {
     return await barangayRepository.findById(id);
   },
 
-  async createBarangay(data: Omit<Barangay, "barangay_id">): Promise<Barangay> {
+  async createBarangay(data: Omit<Barangay, "id">): Promise<Barangay> {
     return await barangayRepository.create(data);
   },
 

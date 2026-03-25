@@ -25,7 +25,7 @@ interface PurokModalProps {
 
 export function PurokModal({ isOpen, onClose, purok, barangayId, onSuccess }: PurokModalProps) {
     const [isLoading, setIsLoading] = useState(false);
-    const [formData, setFormData] = useState<Omit<Purok, "purok_id" | "created_at" | "updated_at">>({
+    const [formData, setFormData] = useState<Omit<Purok, "id" | "created_at" | "updated_at">>({
         purok_name: "",
         barangay_id: barangayId,
         purok_leader: "",
@@ -59,7 +59,7 @@ export function PurokModal({ isOpen, onClose, purok, barangayId, onSuccess }: Pu
         setIsLoading(true);
         try {
             const result = purok 
-                ? await updatePurokAction(purok.purok_id, formData)
+                ? await updatePurokAction(purok.id, formData)
                 : await addPurokAction(formData);
 
             if (result.success) {

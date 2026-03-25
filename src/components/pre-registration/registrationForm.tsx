@@ -116,7 +116,7 @@ export default function PreRegForm() {
 
       if (dbBrgy) {
         setIsFetchingPuroks(true);
-        const result = await getPuroksByBarangayAction(dbBrgy.barangay_id);
+        const result = await getPuroksByBarangayAction(dbBrgy.id);
         if (result.success) {
           setPuroks(result.data || []);
         } else {
@@ -910,7 +910,7 @@ export default function PreRegForm() {
                   </SelectTrigger>
                   <SelectContent>
                     {puroks.map((p) => (
-                      <SelectItem key={p.purok_id} value={p.purok_name}>
+                      <SelectItem key={p.id} value={p.purok_name}>
                         {p.purok_name}
                       </SelectItem>
                     ))}

@@ -1,5 +1,5 @@
 export interface Purok {
-    purok_id: number;
+    id: number;
     purok_name: string;
     barangay_id: number;
     purok_leader?: string;

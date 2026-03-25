@@ -1,5 +1,5 @@
 export type Barangay = {
-    barangay_id: number;
+    id: number;
     barangay_name: string;
     barangay_captain_name: string | null;
     signature_brgy_captain: string | null;
