@@ -38,11 +38,16 @@ export const userService = {
   },
   
   async deleteUser(id: number) {
-    if (!id || id <= 0) {
-      throw new Error("Invalid user ID provided.");
-    }
-    return await userRepository.delete(id);
-  }
+    if (!id || id <= 0) throw new Error("Invalid ID");
 
+    const rowsAffected = await userRepository.delete(id);
+
+    if (rowsAffected === 0) {
+      // Now this is allowed because rowsAffected is a number, not void!
+      throw new Error(`User with ID ${id} does not exist.`);
+    }
+
+    return { success: true };
+  }
   
 };

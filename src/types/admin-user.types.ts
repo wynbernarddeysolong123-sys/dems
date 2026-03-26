@@ -4,7 +4,7 @@
 export type UserRole = "admin" | "staff";
 
 export interface User {
-  admin_id: number;
+  id: number;
   f_name: string;
   l_name: string;
   email: string;

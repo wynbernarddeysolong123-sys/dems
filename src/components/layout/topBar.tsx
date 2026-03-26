@@ -18,7 +18,9 @@ import { Button } from "@/components/ui/button";
 export function Topbar({ user }: { user: any }) {
   return (
     <header className="h-15 bg-white border-b flex items-center justify-between px-4 sticky top-0 z-10">
-      <h1 className="text-xl font-semibold">Dashboard</h1>
+      <h1 className="text-xl font-semibold text-blue-600">
+        Disaster Evacuation Management System
+      </h1>
 
       <div className="flex items-center space-x-4">
         <Button variant="ghost" size="icon">

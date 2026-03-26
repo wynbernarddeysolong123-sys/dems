@@ -32,9 +32,11 @@ export const userRepository = {
     return users as User[];
   },
 
-  async delete(id: number): Promise<void> {
-    await db("admin_table").where({ id }).update({
-      deleted_at: new Date(), // Sets the current timestamp
-    });
-  },
-};
+ // Change Promise<void> to Promise<number>
+  async delete(id: number): Promise<number> {
+    // Return the result of the query
+    return await db("admin_table")
+      .where({ id })
+      .del();
+  }
+}; 

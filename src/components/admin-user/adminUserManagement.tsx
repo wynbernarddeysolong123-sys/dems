@@ -67,7 +67,17 @@ export function UserManagement({ initialUsers }: { initialUsers: User[] }) {
     );
   });
 
-  // ── Columns ──────────────────────────────────────────────────────────
+  const handleDelete = async (id: number) => {
+    // No more window.confirm() needed here!
+    const result = await deleteUserAction(id);
+
+    if (result.success) {
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+      toast.success("User deleted successfully");
+    } else {
+      toast.error(result.error || "Failed to delete user");
+    }
+  };
 
   const columns: ColumnDef<User>[] = useMemo(
     () => [
@@ -141,7 +151,7 @@ export function UserManagement({ initialUsers }: { initialUsers: User[] }) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-red-600 focus:bg-red-50"
-                    onClick={() => handleDelete(user.admin_id)}
+                    onClick={() => handleDelete(user.id)}
                   >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                   </DropdownMenuItem>
@@ -157,17 +167,7 @@ export function UserManagement({ initialUsers }: { initialUsers: User[] }) {
 
   if (isLoading) return <div>Loading users...</div>;
 
-  const handleDelete = async (id: number) => {
-    // No more window.confirm() needed here!
-    const result = await deleteUserAction(id);
 
-    if (result.success) {
-      setUsers((prev) => prev.filter((u) => u.admin_id !== id));
-      toast.success("User deleted successfully");
-    } else {
-      toast.error(result.error || "Failed to delete user");
-    }
-  };
   const handleAddNewUser = (newUser: any) => {
     setUsers([newUser, ...users]);
     toast.success("User added successfully!");
